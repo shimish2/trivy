@@ -57,6 +57,39 @@ type Config struct {
 	autoRefresh bool
 }
 
+func NewDbConfig(dir string) (Config, error) {
+	logger, err := log.NewLogger(true, true)
+	if err != nil {
+		return Config{}, xerrors.New("failed to create a logger")
+	}
+	return Config{
+		logger:         logger,
+		Debug:          true,
+		CacheDir:       dir,
+		Reset:          false,
+		DownloadDBOnly: true,
+	}, nil
+}
+
+func NewConfig(dir string) (Config, error) {
+	logger, err := log.NewLogger(true, true)
+	if err != nil {
+		return Config{}, xerrors.New("failed to create a logger")
+	}
+	return Config{
+		logger:         logger,
+		Debug:          true,
+		CacheDir:       dir,
+		Reset:          false,
+		DownloadDBOnly: true,
+		SkipUpdate:     false,
+		ClearCache:     false,
+		Format:         "table",
+		severities:     strings.Join(dbTypes.SeverityNames, ","),
+		vulnType:       "os,library",
+	}, nil
+}
+
 func New(c *cli.Context) (Config, error) {
 	debug := c.Bool("debug")
 	quiet := c.Bool("quiet")
@@ -99,42 +132,11 @@ func New(c *cli.Context) (Config, error) {
 }
 
 func (c *Config) Init() (err error) {
-	if c.Template != "" {
-		if c.Format == "" {
-			c.logger.Warn("--template is ignored because --format template is not specified. Use --template option with --format template option.")
-		} else if c.Format != "template" {
-			c.logger.Warnf("--template is ignored because --format %s is specified. Use --template option with --format template option.", c.Format)
-		}
-	}
-	if c.Format == "template" && c.Template == "" {
-		c.logger.Warn("--format template is ignored because --template not is specified. Specify --template option when you use --format template.")
-	}
-	if c.onlyUpdate != "" || c.refresh || c.autoRefresh {
-		c.logger.Warn("--only-update, --refresh and --auto-refresh are unnecessary and ignored now. These commands will be removed in the next version.")
-	}
-	if c.SkipUpdate && c.DownloadDBOnly {
-		return xerrors.New("The --skip-update and --download-db-only option can not be specified both")
-	}
-
 	c.Severities = c.splitSeverity(c.severities)
 	c.VulnType = strings.Split(c.vulnType, ",")
-	c.AppVersion = c.context.App.Version
-
-	// --clear-cache, --download-db-only and --reset don't conduct the scan
 	if c.ClearCache || c.DownloadDBOnly || c.Reset {
 		return nil
 	}
-
-	ctx := c.context
-	if c.Input == "" && ctx.NArg() == 0 {
-		c.logger.Error(`trivy requires at least 1 argument or --input option`)
-		cli.ShowAppHelp(c.context)
-		return xerrors.New("arguments error")
-	} else if ctx.NArg() > 1 {
-		c.logger.Error(`multiple images cannot be specified`)
-		return xerrors.New("arguments error")
-	}
-
 	c.Output = os.Stdout
 	if c.output != "" {
 		if c.Output, err = os.Create(c.output); err != nil {
@@ -142,9 +144,10 @@ func (c *Config) Init() (err error) {
 		}
 	}
 
-	if c.Input == "" {
+	/*if c.Input == "" {
 		c.ImageName = ctx.Args().First()
-	}
+	}*/
+	//c.ImageName = c.Input
 
 	// Check whether 'latest' tag is used
 	if c.ImageName != "" {
