@@ -1,4 +1,4 @@
-package standalone
+package integration
 
 import (
 	"context"
@@ -11,6 +11,7 @@ import (
 	"github.com/aquasecurity/fanal/cache"
 	"github.com/aquasecurity/trivy-db/pkg/db"
 	"github.com/aquasecurity/trivy/internal/operation"
+	standalone "github.com/aquasecurity/trivy/internal/standalone"
 	"github.com/aquasecurity/trivy/internal/standalone/config"
 	"github.com/aquasecurity/trivy/pkg/log"
 	"github.com/aquasecurity/trivy/pkg/report"
@@ -92,13 +93,13 @@ func run(c config.Config) (report.Results, error) {
 	cleanup := func() {}
 	if c.Input != "" {
 		// scan tar file
-		scanner, err = InitializeArchiveScanner(ctx, c.Input, cacheClient, cacheClient, c.Timeout)
+		scanner, err = standalone.InitializeArchiveScanner(ctx, c.Input, cacheClient, cacheClient, c.Timeout)
 		if err != nil {
 			return nil, xerrors.Errorf("unable to initialize the archive scanner: %w", err)
 		}
 	} else {
 		// scan an image in Docker Engine or Docker Registry
-		scanner, cleanup, err = InitializeDockerScanner(ctx, c.ImageName, cacheClient, cacheClient, c.Timeout)
+		scanner, cleanup, err = standalone.InitializeDockerScanner(ctx, c.ImageName, cacheClient, cacheClient, c.Timeout)
 		if err != nil {
 			return nil, xerrors.Errorf("unable to initialize the docker scanner: %w", err)
 		}
@@ -118,7 +119,7 @@ func run(c config.Config) (report.Results, error) {
 
 	fmt.Println(results)
 
-	vulnClient := InitializeVulnerabilityClient()
+	vulnClient := standalone.InitializeVulnerabilityClient()
 	for i := range results {
 		vulnClient.FillInfo(results[i].Vulnerabilities, results[i].Type)
 
