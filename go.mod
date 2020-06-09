@@ -22,6 +22,7 @@ require (
 	github.com/kylelemons/godebug v1.1.0
 	github.com/olekukonko/tablewriter v0.0.2-0.20190607075207-195002e6e56a
 	github.com/open-policy-agent/opa v0.21.1
+	github.com/opencontainers/image-spec v1.0.2-0.20190823105129-775207bd45b6
 	github.com/spf13/afero v1.2.2
 	github.com/stretchr/testify v1.6.1
 	github.com/testcontainers/testcontainers-go v0.3.1
@@ -35,6 +36,6 @@ require (
 	k8s.io/utils v0.0.0-20191114184206-e782cd3c129f
 )
 
-replace github.com/aquasecurity/fanal => github.com/anuvu/fanal v0.0.0-20200623180831-a648790ef38e
+replace github.com/aquasecurity/fanal => github.com/anuvu/fanal v0.0.0-20200730215057-8ea8fb48c4b5
 
 replace github.com/aquasecurity/trivy-db => github.com/anuvu/trivy-db v0.0.0-20200623200932-d185809a68f7

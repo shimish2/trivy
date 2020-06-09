@@ -79,6 +79,14 @@ func run(c config.Config, initializeScanner InitializeScanner) error {
 	}
 	defer cacheClient.Close()
 
+	// configure cache dir
+	utils.SetCacheDir(c.CacheDir)
+	cacheClient, err = cache.NewFSCache(c.CacheDir)
+	if err != nil {
+		return xerrors.Errorf("unable to initialize the cache: %w", err)
+	}
+	defer cacheClient.Close()
+
 	if err = db.Init(c.CacheDir); err != nil {
 		return xerrors.Errorf("error in vulnerability DB initialize: %w", err)
 	}
@@ -177,8 +185,12 @@ func runTrivy(c config.Config, initializeScanner InitializeScanner) (report.Resu
 	vulnClient := initializeVulnerabilityClient()
 	for i := range results {
 		vulnClient.FillInfo(results[i].Vulnerabilities, results[i].Type)
-		results[i].Vulnerabilities = vulnClient.Filter(results[i].Vulnerabilities,
-			c.Severities, c.IgnoreUnfixed, c.IgnoreFile)
+		vulns, err := vulnClient.Filter(ctx, results[i].Vulnerabilities,
+			c.Severities, c.IgnoreUnfixed, c.IgnoreFile, c.IgnorePolicy)
+		if err != nil {
+			return nil, xerrors.Errorf("unable to filter vulnerabilities: %w", err)
+		}
+		results[i].Vulnerabilities = vulns
 	}
 
 	return results, nil
