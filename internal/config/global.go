@@ -36,3 +36,14 @@ func NewGlobalConfig(c *cli.Context) (GlobalConfig, error) {
 		CacheDir:   c.String("cache-dir"),
 	}, nil
 }
+
+func NewTrivyGlobalConfig(dir string) (GlobalConfig, error) {
+	logger, err := log.NewLogger(true, false)
+	if err != nil {
+		return GlobalConfig{}, xerrors.New("failed to create a logger")
+	}
+	return GlobalConfig{
+		CacheDir: dir,
+		Logger:   logger,
+	}, nil
+}

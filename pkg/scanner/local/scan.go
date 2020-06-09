@@ -83,7 +83,6 @@ func (s Scanner) Scan(target string, imageID string, layerIDs []string, options 
 			return nil, nil, false, xerrors.Errorf("failed to apply layers: %w", err)
 		}
 	}
-
 	var eosl bool
 	var results report.Results
 

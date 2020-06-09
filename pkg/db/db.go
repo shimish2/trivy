@@ -185,7 +185,7 @@ func (c Client) UpdateMetadata(cacheDir string) error {
 		return xerrors.Errorf("unable to get metadata: %w", err)
 	}
 
-	if err = c.dbc.StoreMetadata(metadata, filepath.Join(cacheDir, "db")); err != nil {
+	if err = c.dbc.StoreMetadata(metadata, cacheDir); err != nil {
 		return xerrors.Errorf("failed to store metadata: %w", err)
 	}
 

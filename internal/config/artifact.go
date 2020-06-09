@@ -25,6 +25,12 @@ func NewArtifactConfig(c *cli.Context) ArtifactConfig {
 	}
 }
 
+func NewTrivyArtifactConfig(input string) ArtifactConfig {
+	return ArtifactConfig{
+		Input: input,
+	}
+}
+
 func (c *ArtifactConfig) Init(args cli.Args, logger *zap.SugaredLogger) (err error) {
 	if c.Input == "" && args.Len() == 0 {
 		logger.Error(`trivy requires at least 1 argument or --input option`)

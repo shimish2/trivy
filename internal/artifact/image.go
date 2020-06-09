@@ -9,6 +9,7 @@ import (
 
 	"github.com/aquasecurity/fanal/cache"
 	"github.com/aquasecurity/trivy/internal/artifact/config"
+	"github.com/aquasecurity/trivy/pkg/report"
 	"github.com/aquasecurity/trivy/pkg/scanner"
 )
 
@@ -47,4 +48,13 @@ func ImageRun(cliCtx *cli.Context) error {
 	}
 
 	return run(c, dockerScanner)
+}
+
+func TrivyImage(config config.Config) (report.Results, error) {
+	if config.Input != "" {
+		// scan tar file
+		return runTrivy(config, archiveScanner)
+	}
+
+	return runTrivy(config, dockerScanner)
 }

@@ -22,7 +22,11 @@ import (
 type InitializeScanner func(context.Context, string, cache.ArtifactCache, cache.LocalArtifactCache, time.Duration) (
 	scanner.Scanner, func(), error)
 
-func run(c config.Config, initializeScanner InitializeScanner) error {
+func RunDb(c config.Config) error {
+	return runDb(c)
+}
+
+func runDb(c config.Config) error {
 	if err := log.InitLogger(c.Debug, c.Quiet); err != nil {
 		l.Fatal(err)
 	}
@@ -51,9 +55,29 @@ func run(c config.Config, initializeScanner InitializeScanner) error {
 		return err
 	}
 
-	if c.DownloadDBOnly {
-		return nil
+	if err = db.Init(c.CacheDir); err != nil {
+		return xerrors.Errorf("error in vulnerability DB initialize: %w", err)
 	}
+	defer db.Close()
+	return nil
+}
+
+func Run(c config.Config, initializeScanner InitializeScanner) error {
+	return run(c, initializeScanner)
+}
+
+func run(c config.Config, initializeScanner InitializeScanner) error {
+	if err := log.InitLogger(c.Debug, c.Quiet); err != nil {
+		l.Fatal(err)
+	}
+
+	// configure cache dir
+	utils.SetCacheDir(c.CacheDir)
+	cacheClient, err := cache.NewFSCache(c.CacheDir)
+	if err != nil {
+		return xerrors.Errorf("unable to initialize the cache: %w", err)
+	}
+	defer cacheClient.Close()
 
 	if err = db.Init(c.CacheDir); err != nil {
 		return xerrors.Errorf("error in vulnerability DB initialize: %w", err)
@@ -108,4 +132,54 @@ func run(c config.Config, initializeScanner InitializeScanner) error {
 		}
 	}
 	return nil
+}
+
+func runTrivy(c config.Config, initializeScanner InitializeScanner) (report.Results, error) {
+	if err := log.InitLogger(c.Debug, c.Quiet); err != nil {
+		l.Fatal(err)
+	}
+
+	// configure cache dir
+	utils.SetCacheDir(c.CacheDir)
+	cacheClient, err := cache.NewFSCache(c.CacheDir)
+	if err != nil {
+		return nil, xerrors.Errorf("unable to initialize the cache: %w", err)
+	}
+	defer cacheClient.Close()
+
+	if err = db.Init(c.CacheDir); err != nil {
+		return nil, xerrors.Errorf("error in vulnerability DB initialize: %w", err)
+	}
+	defer db.Close()
+
+	target := c.Target
+	if c.Input != "" {
+		target = c.Input
+	}
+
+	ctx := context.Background()
+	scanner, cleanup, err := initializeScanner(ctx, target, cacheClient, cacheClient, c.Timeout)
+	if err != nil {
+		return nil, xerrors.Errorf("unable to initialize a scanner: %w", err)
+	}
+	defer cleanup()
+
+	scanOptions := types.ScanOptions{
+		VulnType:            c.VulnType,
+		ScanRemovedPackages: c.ScanRemovedPkgs, // this is valid only for image subcommand
+	}
+	log.Logger.Debugf("Vulnerability type:  %s", scanOptions.VulnType)
+
+	results, err := scanner.ScanArtifact(ctx, scanOptions)
+	if err != nil {
+		return nil, xerrors.Errorf("error in image scan: %w", err)
+	}
+	vulnClient := initializeVulnerabilityClient()
+	for i := range results {
+		vulnClient.FillInfo(results[i].Vulnerabilities, results[i].Type)
+		results[i].Vulnerabilities = vulnClient.Filter(results[i].Vulnerabilities,
+			c.Severities, c.IgnoreUnfixed, c.IgnoreFile)
+	}
+
+	return results, nil
 }

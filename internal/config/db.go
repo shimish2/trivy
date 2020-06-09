@@ -23,6 +23,14 @@ func NewDBConfig(c *cli.Context) DBConfig {
 	}
 }
 
+func NewTrivyDBConfig() DBConfig {
+	return DBConfig{
+		Reset:          false,
+		DownloadDBOnly: true,
+		SkipUpdate:     false,
+	}
+}
+
 func (c *DBConfig) Init() (err error) {
 	if c.SkipUpdate && c.DownloadDBOnly {
 		return xerrors.New("--skip-update and --download-db-only options can not be specified both")

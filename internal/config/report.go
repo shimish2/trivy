@@ -46,18 +46,14 @@ func NewReportConfig(c *cli.Context) ReportConfig {
 	}
 }
 
+func NewTrivyReportConfig() ReportConfig {
+	return ReportConfig{
+		Format:     "table",
+		severities: strings.Join(dbTypes.SeverityNames, ","),
+		vulnType:   "os,library",
+	}
+}
 func (c *ReportConfig) Init(logger *zap.SugaredLogger) (err error) {
-	if c.Template != "" {
-		if c.Format == "" {
-			logger.Warn("--template is ignored because --format template is not specified. Use --template option with --format template option.")
-		} else if c.Format != "template" {
-			logger.Warnf("--template is ignored because --format %s is specified. Use --template option with --format template option.", c.Format)
-		}
-	}
-	if c.Format == "template" && c.Template == "" {
-		logger.Warn("--format template is ignored because --template not is specified. Specify --template option when you use --format template.")
-	}
-
 	c.Severities = c.splitSeverity(logger, c.severities)
 	c.VulnType = strings.Split(c.vulnType, ",")
 

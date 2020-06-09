@@ -41,6 +41,21 @@ func New(c *cli.Context) (Config, error) {
 	}, nil
 }
 
+func NewTrivyConfig(dir string) (Config, error) {
+	gc, err := config.NewTrivyGlobalConfig(dir)
+	if err != nil {
+		return Config{}, xerrors.Errorf("failed to initialize global options: %w", err)
+	}
+
+	return Config{
+		GlobalConfig:   gc,
+		ArtifactConfig: config.NewTrivyArtifactConfig(""),
+		DBConfig:       config.NewTrivyDBConfig(),
+		ImageConfig:    config.NewTrivyImageConfig(),
+		ReportConfig:   config.NewTrivyReportConfig(),
+	}, nil
+}
+
 func (c *Config) Init(image bool) error {
 	if err := c.ReportConfig.Init(c.Logger); err != nil {
 		return err
@@ -66,6 +81,14 @@ func (c *Config) Init(image bool) error {
 		if err := c.ImageConfig.Init(c.Context.Args(), c.Logger); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func (c *Config) InitTrivy() error {
+	if err := c.ReportConfig.Init(c.Logger); err != nil {
+		return err
 	}
 
 	return nil

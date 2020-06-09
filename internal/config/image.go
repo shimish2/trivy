@@ -19,6 +19,12 @@ func NewImageConfig(c *cli.Context) ImageConfig {
 	}
 }
 
+func NewTrivyImageConfig() ImageConfig {
+	return ImageConfig{
+		ScanRemovedPkgs: false,
+	}
+}
+
 func (c *ImageConfig) Init(args cli.Args, logger *zap.SugaredLogger) (err error) {
 	imageName := args.First()
 
